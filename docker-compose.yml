@@ -1,0 +1,44 @@
+version: "3.9"
+
+include:
+  - memes_service/docker-compose.yml
+  - storage_service/docker-compose.yml
+
+services:
+  memes_service:
+    container_name: memes_service
+    environment:
+      POSTGRES_SERVER: "db:5432"
+      STORAGE_HOST: "storage_service"
+    build:
+      context: ./memes_service/
+      dockerfile: dockerfile
+    networks:
+      - meme_net
+      - service_net
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./.env
+      - ./memes_service/.env
+  storage_service:
+    container_name: storage_service
+    build:
+      context: ./storage_service/
+      dockerfile: dockerfile
+    networks:
+      - storage_net
+      - service_net
+    ports:
+      - "${STORAGE_PORT}:${STORAGE_PORT}"
+    depends_on:
+      - minio
+    env_file:
+      - ./.env
+      - ./storage_service/.env
+
+networks:
+  service_net:
